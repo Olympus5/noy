@@ -2,6 +2,24 @@
 
 ## Mécanisme d'appel système
 
+Les fichiers mise en jeu sont:
+
+* syscall.h
+* libnachos.h
+* sys.s
+
+pour les fonctions/méthodes:
+
+* syscall
+* ensemble des appels système (cf. syscall.h)
+
+Voici l'ordre d'exécution d'un appel système de ce type:
+
+1. On appel une fonction défini dans la librairie standard de nachos
+2. Cette dernière va faire un appel système (défini dans syscall)
+3. On initialise les registres r2, r4, r5, r6 et r7 
+4. On déclenche l'exception adéquate via l'instruction syscall (fichier sys.s) et on passe en mode noyau
+
 ## Gestion de threads et de processus
 
 1. Ce qui est sauvegardé lors d'un changement de contexte sont les registres du processeurs MIPS (Le contexte d'execution du processeur).
@@ -33,3 +51,10 @@ système pour vérifier qu’il est bien appliqué sur le bon type d’objet (le
 systèmes sont transmis dans des registres, donc ne peuvent pas être typés).
 
 ## Environnement de développement
+
+1.
+2. On peut utiliser un outil tel que gdb pour mettre au point un noyau comme Nachos.
+
+>  les outils de mise au point classiques (par exemple gdb, cf annexe A) peuvent être utilisés.
+
+3. Oui. Cela pour la simple raison que Nachos est un noyau émulé. ayant accès à gdb et aux "librairies" mises en jeu par les programmes utilisateurs, nous avont donc aucune restriction.
