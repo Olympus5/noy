@@ -16,7 +16,7 @@ pour les fonctions/méthodes:
 Voici l'ordre d'exécution d'un appel système de ce type:
 
 1. On appel une fonction défini dans la librairie standard de nachos
-2. Cette dernière va faire un appel système (défini dans syscall)
+2. Cette dernière va faire un appel système (défini dans syscall.h)
 3. On initialise les registres r2, r4, r5, r6 et r7 
 4. On déclenche l'exception adéquate via l'instruction syscall (fichier sys.s) et on passe en mode noyau
 
