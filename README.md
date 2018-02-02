@@ -57,4 +57,4 @@ systèmes sont transmis dans des registres, donc ne peuvent pas être typés).
 
 >  les outils de mise au point classiques (par exemple gdb, cf annexe A) peuvent être utilisés.
 
-3. Oui. Cela pour la simple raison que Nachos est un noyau émulé. ayant accès à gdb et aux "librairies" mises en jeu par les programmes utilisateurs, nous avont donc aucune restriction.
+3. Oui. Cela pour la simple raison que Nachos est un noyau émulé. ayant accès à gdb et aux "librairies" mises en jeu par les programmes utilisateurs, nous avont donc aucune restriction. + manipulation possible des fichiers *.elf* par gdb
