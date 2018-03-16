@@ -7,7 +7,7 @@ int main() {
     n_printf("Je suis le receiver\n");
 
     n_printf("Taille du message reçue: %d\n", TtyReceive(message, length));
-    n_printf("Message reçu: %s", message);
+    n_printf("Message reçu: %s\n", message);
 
     // On eteind la machine
     Halt();

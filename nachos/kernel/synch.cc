@@ -237,10 +237,10 @@ Condition::~Condition() {
 */
 //----------------------------------------------------------------------
 void Condition::Wait() {
-	g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 	waitqueue->Append(g_current_thread);
 	g_current_thread->Sleep();
-	g_machine->interrupt->SetStatus(INTERRUPTS_ON);
+	g_machine->interrupt->SetStatus(int_status);
 }
 
 //----------------------------------------------------------------------
@@ -251,10 +251,10 @@ void Condition::Wait() {
 */
 //----------------------------------------------------------------------
 void Condition::Signal() {
-	g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 	Thread* thread = (Thread*) waitqueue->Remove();
 	if(thread != NULL) g_scheduler->ReadyToRun(thread);
-	g_machine->interrupt->SetStatus(INTERRUPTS_ON);
+	g_machine->interrupt->SetStatus(int_status);
 }
 
 //----------------------------------------------------------------------
@@ -264,7 +264,7 @@ void Condition::Signal() {
 */
 //----------------------------------------------------------------------
 void Condition::Broadcast() {
-	g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 	Thread* thread = (Thread*) waitqueue->Remove();
 
 	while(thread != NULL) {
@@ -272,5 +272,5 @@ void Condition::Broadcast() {
 		thread = (Thread*) waitqueue->Remove();
 	}
 
-	g_machine->interrupt->SetStatus(INTERRUPTS_ON);
+	g_machine->interrupt->SetStatus(int_status);
 }
