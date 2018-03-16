@@ -104,10 +104,11 @@ Semaphore::V() {
 
 	DEBUG('e', "V: %d\n", value);
 
-	value++;
-
 	Thread* thread = (Thread*) queue->Remove();
-	if(thread != NULL) g_scheduler->ReadyToRun(thread);
+	if(thread != NULL) {
+		value++;
+		g_scheduler->ReadyToRun(thread);
+	}
 
 	g_machine->interrupt->SetStatus(int_status);
 }
