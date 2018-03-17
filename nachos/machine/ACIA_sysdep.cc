@@ -89,7 +89,7 @@ ACIA_sysdep::InterruptRec()
   // Try to read a char from the socket.
   received = ReadFromSocket(sock,&(interface->inputRegister),1);
 
-
+  //DEBUG('d', "[Interrupt REC] mode interrupt autorisé: %d\n", g_machine->acia->GetWorkingMode());
   // If this operation successed...
   if (received!=-1)
     {
@@ -97,8 +97,10 @@ ACIA_sysdep::InterruptRec()
       interface->inputStateRegister = FULL;
 
       // In interrupt mode and reception interrups are allowed, execute the reception handler.
-      if (((interface->mode) & REC_INTERRUPT) != 0)
-	g_acia_driver->InterruptReceive();
+      if (((interface->mode) & REC_INTERRUPT) != 0) {
+        DEBUG('d', "[Interrupt EM] mode interrupt autorisé: %d\n", g_machine->acia->GetWorkingMode());
+        g_acia_driver->InterruptReceive();  
+      }
     }
 };
 
@@ -115,10 +117,11 @@ ACIA_sysdep::InterruptEm()
   // Drain the output register.
   interface->outputRegister = 0;
   interface->outputStateRegister = EMPTY;
-
   // If send interrupts ara allowed, execute the send interrupt handler
-  if (((interface->mode) & SEND_INTERRUPT) != 0)
+  if (((interface->mode) & SEND_INTERRUPT) != 0) {
+    DEBUG('d', "[Interrupt EM] mode interrupt autorisé: %d\n", g_machine->acia->GetWorkingMode());
     g_acia_driver->InterruptSend();
+  }
 };
 
 

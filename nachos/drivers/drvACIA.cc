@@ -46,8 +46,10 @@ DriverACIA::DriverACIA()
 		if(g_cfg->ACIA == ACIA_BUSY_WAITING) {
 			g_machine->acia->SetWorkingMode(BUSY_WAITING);
 		} else {
-			this->send_sema = new Semaphore((char*)"send_sema", 0);
+			this->send_sema = new Semaphore((char*)"send_sema", 1);
 			this->receive_sema = new Semaphore((char*)"receive_sema", 0);
+			this->ind_send = 1;
+			this->ind_rec = 0;
 		}
 }
 
@@ -59,7 +61,8 @@ DriverACIA::DriverACIA()
 
 int DriverACIA::TtySend(char* buff)
 {
-	if(g_machine->acia->GetWorkingMode() == BUSY_WAITING) {// Busy waiting mode
+
+	if(g_cfg->ACIA == ACIA_BUSY_WAITING) {// Busy waiting mode
 		unsigned int i = 0;
 
 	  for(i = 0; i < strlen(buff); i++) {
@@ -74,18 +77,21 @@ int DriverACIA::TtySend(char* buff)
 	  while(g_machine->acia->GetOutputStateReg() == FULL) {};
 	  g_machine->acia->PutChar('\0');
 	} else { // Interrupt mode
-		g_machine->acia->SetWorkingMode(SEND_INTERRUPT);
-		this->ind_send = 0;
-		int i = 0;
+		this->send_sema->P();
+		this->ind_send = 1;
+		int i;
 
 		// On remplie le tampon d'émission, pour que la routine d'it puisse accéder aux caractères à envoyer
 		for(i = 0; i < BUFFER_SIZE-1 && buff[i] != 0; i++) {
 			this->send_buffer[i] = buff[i];
 		}
 
-		this->send_buffer[i] == '\0';
+		this->send_buffer[i] = '\0';
 
-		this->send_sema->P();
+		g_machine->acia->SetWorkingMode(SEND_INTERRUPT);
+		g_machine->acia->PutChar(buff[0]);
+
+		DEBUG('d', "state of output ACIA: %d and allowed mode: %d\n", g_machine->acia->GetOutputStateReg() == EMPTY, g_machine->acia->GetWorkingMode());
 	}
 
   return strlen(buff);
@@ -102,7 +108,7 @@ int DriverACIA::TtyReceive(char* buff,int lg)
 {
 	int length = 0;
 
-	if(g_machine->acia->GetWorkingMode() == BUSY_WAITING) { // Busy waiting mode
+	if(g_cfg->ACIA == ACIA_BUSY_WAITING) { // Busy waiting mode
 		int i = 0;
 	  bool end = false;
 
@@ -116,25 +122,19 @@ int DriverACIA::TtyReceive(char* buff,int lg)
 	    if(buff[i] == 0) {// Une fois qu'on tombe sur le caractère de fin on stop la boucle de lecture du registre de donnée du périphérique
 	        end = true;
 	    } else {
-				length++;
-			}
+			length++;
+		}
 	  }
 	} else { // Interrupt mode
-		bool end = false;
 		g_machine->acia->SetWorkingMode(REC_INTERRUPT);
-		this->ind_rec = 0;
-
 		this->receive_sema->P();
 
-		for(int i = 0; i < BUFFER_SIZE && !end; i++) {
+		for(int i = 0; i < BUFFER_SIZE && this->receive_buffer[i] != 0; i++) {
 			buff[i] = this->receive_buffer[i];
-
-			if(buff[i] == 0) {
-				end = true;
-			} else {
-				length++;
-			}
+			length++;
 		}
+
+		this->ind_rec = 0;
 	}
 
   return length;
@@ -153,18 +153,13 @@ void DriverACIA::InterruptSend()
 {
 	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 
-	bool end = false;
-
-	while(this->send_buffer[this->ind_send] != 0 && !end) {
+	if(this->send_buffer[this->ind_send] != 0) {
 		g_machine->acia->PutChar(this->send_buffer[this->ind_send]);
 		this->ind_send++;
-
-		if(ind_send >= BUFFER_SIZE) {
-			end = true;
-		}
+	} else {
+		g_machine->acia->PutChar('\0');
+		this->send_sema->V();
 	}
-
-	this->send_sema->V();
 
 	g_machine->interrupt->SetStatus(int_status);
 }
@@ -182,22 +177,17 @@ void DriverACIA::InterruptSend()
 void DriverACIA::InterruptReceive()
 {
 	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	DEBUG('d', "Interrupt receive\n");
 
-	bool end = false;
-
-	// Reception du premier caractère
+	// Reception des caractères
 	this->receive_buffer[this->ind_rec] = g_machine->acia->GetChar();
-
-	while(this->receive_buffer[this->ind_rec] != 0 && !end) {
+	//printf("J'ai reçu: %c\n", this->receive_buffer[this->ind_rec]);
+	if(this->receive_buffer[this->ind_rec] != 0) {
 		this->ind_rec++;
-		this->receive_buffer[this->ind_rec] = g_machine->acia->GetChar();
-
-		if(ind_rec >= BUFFER_SIZE) {
-			end = true;
-		}
+	} else {
+		g_machine->acia->SetWorkingMode(~REC_INTERRUPT);
+		this->receive_sema->V();
 	}
-
-	this->receive_sema->V();
 
 	g_machine->interrupt->SetStatus(int_status);
 }
