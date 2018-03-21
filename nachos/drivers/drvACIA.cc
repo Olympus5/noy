@@ -48,8 +48,6 @@ DriverACIA::DriverACIA()
 		} else {
 			this->send_sema = new Semaphore((char*)"send_sema", 1);
 			this->receive_sema = new Semaphore((char*)"receive_sema", 0);
-			this->ind_send = 1;
-			this->ind_rec = 0;
 		}
 }
 
@@ -89,6 +87,7 @@ int DriverACIA::TtySend(char* buff)
 		this->send_buffer[i] = '\0';
 
 		g_machine->acia->SetWorkingMode(SEND_INTERRUPT);
+		// On envoie le premier caractère pour lancer la routine d'IT
 		g_machine->acia->PutChar(buff[0]);
 
 		DEBUG('d', "state of output ACIA: %d and allowed mode: %d\n", g_machine->acia->GetOutputStateReg() == EMPTY, g_machine->acia->GetWorkingMode());
@@ -126,6 +125,7 @@ int DriverACIA::TtyReceive(char* buff,int lg)
 		}
 	  }
 	} else { // Interrupt mode
+		this->ind_rec = 0;
 		g_machine->acia->SetWorkingMode(REC_INTERRUPT);
 		this->receive_sema->P();
 
@@ -133,8 +133,6 @@ int DriverACIA::TtyReceive(char* buff,int lg)
 			buff[i] = this->receive_buffer[i];
 			length++;
 		}
-
-		this->ind_rec = 0;
 	}
 
   return length;
@@ -154,10 +152,14 @@ void DriverACIA::InterruptSend()
 	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 
 	if(this->send_buffer[this->ind_send] != 0) {
+		//Car debug d affiche trop de message !!!
+		//printf("Char: %c\n", this->send_buffer[this->ind_send]);
 		g_machine->acia->PutChar(this->send_buffer[this->ind_send]);
 		this->ind_send++;
 	} else {
 		g_machine->acia->PutChar('\0');
+		// NE PAS OUBLIER DE COUPER SEND INTERRUPT (sinon vide le buffer en entrée !!!)
+		g_machine->acia->SetWorkingMode(~SEND_INTERRUPT);
 		this->send_sema->V();
 	}
 
@@ -182,6 +184,7 @@ void DriverACIA::InterruptReceive()
 	// Reception des caractères
 	this->receive_buffer[this->ind_rec] = g_machine->acia->GetChar();
 	//printf("J'ai reçu: %c\n", this->receive_buffer[this->ind_rec]);
+	printf("Working Mode: %d\n", g_machine->acia->GetWorkingMode());
 	if(this->receive_buffer[this->ind_rec] != 0) {
 		this->ind_rec++;
 	} else {
