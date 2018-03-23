@@ -149,7 +149,7 @@ int DriverACIA::TtyReceive(char* buff,int lg)
 
 void DriverACIA::InterruptSend()
 {
-	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	//IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 
 	if(this->send_buffer[this->ind_send] != 0) {
 		//Car debug d affiche trop de message !!!
@@ -163,7 +163,7 @@ void DriverACIA::InterruptSend()
 		this->send_sema->V();
 	}
 
-	g_machine->interrupt->SetStatus(int_status);
+	//g_machine->interrupt->SetStatus(int_status);
 }
 
 //-------------------------------------------------------------------------
@@ -178,13 +178,13 @@ void DriverACIA::InterruptSend()
 
 void DriverACIA::InterruptReceive()
 {
-	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	//IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 	DEBUG('d', "Interrupt receive\n");
 
 	// Reception des caractères
 	this->receive_buffer[this->ind_rec] = g_machine->acia->GetChar();
 	//printf("J'ai reçu: %c\n", this->receive_buffer[this->ind_rec]);
-	printf("Working Mode: %d\n", g_machine->acia->GetWorkingMode());
+	//printf("Working Mode: %d\n", g_machine->acia->GetWorkingMode());
 	if(this->receive_buffer[this->ind_rec] != 0) {
 		this->ind_rec++;
 	} else {
@@ -192,5 +192,5 @@ void DriverACIA::InterruptReceive()
 		this->receive_sema->V();
 	}
 
-	g_machine->interrupt->SetStatus(int_status);
+	//g_machine->interrupt->SetStatus(int_status);
 }

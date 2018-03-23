@@ -122,7 +122,7 @@ char ACIA::GetChar()
 {
   char temp;
   temp = inputRegister;
-  printf("input: %c\n", inputRegister);
+  //printf("input: %c\n", inputRegister);
   sysdep->Drain();
   return temp;
 };
