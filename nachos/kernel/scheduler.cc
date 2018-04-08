@@ -1,4 +1,4 @@
-/*! \file scheduler.cc 
+/*! \file scheduler.cc
 //  \brief Routines to choose the next thread to run, and to dispatch to that thread.
 //
 // 	These routines assume that interrupts are already disabled.
@@ -6,14 +6,14 @@
 //	(since we are on a uniprocessor).
 //
 // 	NOTE: We can't use Locks to provide mutual exclusion here, since
-// 	if we needed to wait for a lock, and the lock was busy, we would 
-//	end up calling FindNextToRun(), and that would put us in an 
+// 	if we needed to wait for a lock, and the lock was busy, we would
+//	end up calling FindNextToRun(), and that would put us in an
 //	infinite loop.
 //
 // 	Very simple implementation -- no priorities, straight FIFO.
 */
 // Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
+// All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
 
 
@@ -23,14 +23,14 @@
 
 //----------------------------------------------------------------------
 //  Scheduler::Scheduler
-/*! 	Constructor. Initialize the list of ready but not 
+/*! 	Constructor. Initialize the list of ready but not
 //      running threads to empty.
 */
 //----------------------------------------------------------------------
 Scheduler::Scheduler()
-{ 
-    readyList = new Listint; 
-} 
+{
+    readyList = new Listint;
+}
 
 //----------------------------------------------------------------------
 // Scheduler::~Scheduler
@@ -38,9 +38,9 @@ Scheduler::Scheduler()
 */
 //----------------------------------------------------------------------
 Scheduler::~Scheduler()
-{ 
-    delete readyList; 
-} 
+{
+    delete readyList;
+}
 
 //----------------------------------------------------------------------
 // Scheduler::ReadyToRun
@@ -96,7 +96,7 @@ Thread *oldThread = g_current_thread;
 
     DEBUG('t', (char *)"Switching from thread \"%s\" to thread \"%s\" time %llu\n",
 	  g_current_thread->GetName(), nextThread->GetName(),g_stats->getTotalTicks());
-    
+
     // Modify the current thread
     g_current_thread = nextThread;
 

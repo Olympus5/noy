@@ -1,26 +1,25 @@
-/*! \file  machine.h 
+/*! \file  machine.h
     \brief Data structures to simulate the MIPS machine
-  
+
  User programs are loaded into "mainMemory"; to Nachos,
  this looks just like an array of bytes.  Of course, the Nachos
  kernel is in memory too -- but as in most machines these days,
  the kernel is loaded into a separate memory region from user
  programs, and accesses to kernel memory are not translated or paged.
-  
- In Nachos, user programs are executed one instruction at a time, 
+
+ In Nachos, user programs are executed one instruction at a time,
  by the MIPS simulator.  Each memory reference is translated, checked
  for errors, etc.
 
  DO NOT CHANGE -- part of the machine emulation
-  
+
  Copyright (c) 1992-1993 The Regents of the University of California.
- All rights reserved.  See copyright.h for copyright notice and limitation 
+ All rights reserved.  See copyright.h for copyright notice and limitation
  of liability and disclaimer of warranty provisions.
 */
 
 #ifndef MACHINE_H
 #define MACHINE_H
-
 // Integer sizes (such that MIPS integers are 32-bit values)
 #include <stdint.h>
 
@@ -43,7 +42,7 @@ enum ExceptionType { NO_EXCEPTION,           //!< Everything ok!
 					     space */
 		     OVERFLOW_EXCEPTION,     //!< Integer overflow in add or sub.
 		     ILLEGALINSTR_EXCEPTION, //!< Unimplemented or reserved instr.
-		     
+
 		     NUM_EXCEPTION_TYPES
 };
 
@@ -54,7 +53,7 @@ enum ExceptionType { NO_EXCEPTION,           //!< Everything ok!
 class Console;
 
 /*! Nachos can be running kernel code (SYSTEM_MODE), user code (USER_MODE),
- or there can be no runnable thread, because the ready list 
+ or there can be no runnable thread, because the ready list
  is empty (IDLE_MODE).
 */
 enum MachineStatus {IDLE_MODE, SYSTEM_MODE, USER_MODE};
@@ -70,7 +69,7 @@ enum MachineStatus {IDLE_MODE, SYSTEM_MODE, USER_MODE};
 #define HI_REG		32	//!< Double register to hold multiply result
 #define LO_REG		33
 #define PC_REG		34	//!< Current program counter
-#define NEXTPC_REG	35	//!< Next program counter (for branch delay) 
+#define NEXTPC_REG	35	//!< Next program counter (for branch delay)
 #define PREVPC_REG	36	//!< Previous program counter (for debugging)
 #define LOAD_REG	37	//!< The register target of a delayed load.
 #define LOADVALUE_REG 	38	//!< The value to be loaded by a delayed load.
@@ -105,13 +104,13 @@ class Instruction {
 };
 
 /*! \brief Defines the simulated execution hardware
-// 
-// User programs shouldn't be able to tell that they are running on our 
-// simulator or on the real hardware, except 
+//
+// User programs shouldn't be able to tell that they are running on our
+// simulator or on the real hardware, except
 //	- we only partially support floating point instructions (only
 //	  "ordered operations", no FP "likely branches", no fixed point
 //	  words
-//	- the system call interface to Nachos is not the same as UNIX 
+//	- the system call interface to Nachos is not the same as UNIX
 //	  (10 system calls in Nachos vs. 200 in UNIX!)
 // If we were to implement more of the UNIX system calls, we ought to be
 // able to run Nachos on top of Nachos!
@@ -141,34 +140,34 @@ class Machine {
 
   int8_t ReadCC (void);           //!< Read floating point code condition register
   void WriteCC (int8_t cc);       //!< Write floating point code condition register
-  
+
   MachineStatus GetStatus() { return status; } //!< idle, kernel, user
   void SetStatus(MachineStatus st) { status = st; }
 
-// Routines internal to the machine simulation -- DO NOT call these 
+// Routines internal to the machine simulation -- DO NOT call these
 
-    int OneInstruction(Instruction *instr); 	
+    int OneInstruction(Instruction *instr);
     				//!< Run one instruction of a user program.
                                 //!< Return the execution time of the instr (cycle)
-    void DelayedLoad(int nextReg, int nextVal);  	
+    void DelayedLoad(int nextReg, int nextVal);
 				//!< Do a pending delayed load (modifying a reg)
 
     void RaiseException(ExceptionType which, int badVAddr);
 				//!< Trap to the Nachos kernel, because of a
-				//!< system call or other exception.  
+				//!< system call or other exception.
 
     void Debugger();		//!< Invoke the user program debugger
-    void DumpState();		//!< Print the user CPU and memory state 
+    void DumpState();		//!< Print the user CPU and memory state
 
 
   // Data structures -- all of these are accessible to Nachos kernel code.
   // "public" for convenience.
   //
-  // Note that *all* communication between the user program and the kernel 
+  // Note that *all* communication between the user program and the kernel
   // are in terms of these data structures.
-  
+
   int32_t int_registers[NUM_INT_REGS]; //!< CPU Integer registers, for executing user programs
-  
+
   int32_t float_registers[NUM_FP_REGS]; //!< Floating point general purpose registers
 
   int8_t cc;                     /*!< Condition code. Note that

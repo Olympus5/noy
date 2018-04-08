@@ -114,10 +114,9 @@ int Thread::Start(Process *owner, int32_t func, int arg)
   InitSimulatorContext(mipsStack, SIMULATORSTACKSIZE);
   InitThreadContext(func, userStack, arg);
 
-  IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+  g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
   g_scheduler->ReadyToRun(this);
   g_alive->Append(this);
-  g_machine->interrupt->SetStatus(int_status);
 
   return NO_ERROR;
 }
@@ -268,15 +267,13 @@ Thread::InitSimulatorContext(int8_t* base_stack_addr,
   void
   Thread::Finish ()
   {
-    IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
-    DEBUG('i', "(Finish) Valeur de l'IT précédente: %s\n", (int_status == INTERRUPTS_ON) ? "true" : "false");
+    g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
     DEBUG('t', (char *)"Finishing thread \"%s\"\n", GetName());
 
     g_thread_to_be_destroyed = this;
-    g_alive->RemoveItem(this);
     // Go to sleep
     Sleep();  // invokes SWITCH
-    g_machine->interrupt->SetStatus(int_status);
+    g_machine->interrupt->SetStatus(INTERRUPTS_ON);
   }
 
   //----------------------------------------------------------------------
@@ -394,8 +391,6 @@ Thread::InitSimulatorContext(int8_t* base_stack_addr,
     for(i = 0; i < NUM_FP_REGS; i++) {
       g_machine->WriteFPRegister(i, thread_context.float_registers[i]);
     }
-
-    g_machine->mmu->translationTable = this->process->addrspace->translationTable;
 
     g_machine->WriteCC(thread_context.cc);
   }

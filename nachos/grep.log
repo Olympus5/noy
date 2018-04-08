@@ -1,0 +1,28 @@
+vm/physMem.cc:  while (!free_page_list.IsEmpty()) page =  (int64_t)free_page_list.Remove();
+vm/physMem.cc:  page = (int64_t)free_page_list.Remove();
+utility/stats.cc:    s = ((ProcessStat *) allStatistics->SortedRemove(&tmp));
+utility/stats.cc:      s = ((ProcessStat *) allStatistics->SortedRemove(&tmp));
+utility/list.h:    while (Remove() != NULL)
+utility/list.h:  void *Remove(){
+utility/list.h:    return SortedRemove(NULL);  // Same as SortedRemove, but ignore the key
+utility/list.h:  void *SortedRemove(Priority *keyPtr){
+utility/list.h:    while ((temp=this->Remove()) != item) this->Append(temp);
+userlib/syscall.h:int Remove(char* name);
+kernel/main.cc:    g_file_system->Remove(g_cfg->FileToRemove);
+kernel/synch.cc:    Thread *t =  (Thread *)queue->Remove();
+kernel/synch.cc:	queue->Remove(g_current_thread);
+kernel/exception.cc:	  int err=g_open_file_table->Remove(ch);
+kernel/scheduler.cc:  Thread * thread=(Thread*)readyList->Remove();
+machine/interrupt.cc:	delete (PendingInterrupt *)(pending->Remove());
+machine/interrupt.cc:    (PendingInterrupt *)pending->SortedRemove(&when);
+filesys/filesys.cc:FileSystem::Remove(char *name)
+filesys/filesys.cc:  directory.Remove(dirname);
+filesys/filesys.cc:  parentdir.Remove(name);
+filesys/filesys.h:    int Remove(char *name);  		//!< Delete a file (UNIX unlink)
+filesys/directory.cc:Directory::Remove(char *name)
+filesys/directory.h:    int Remove(char *name);		// Remove a file from the directory
+filesys/oftable.h:  int Remove(char *name);     //!< remove the file from the file system
+filesys/oftable.cc://bool OpenFileTable::Remove(char *name
+filesys/oftable.cc:int OpenFileTable::Remove(char *name)
+filesys/oftable.cc:      directory.Remove(filename);
+filesys/oftable.cc:      return (g_file_system->Remove(name));

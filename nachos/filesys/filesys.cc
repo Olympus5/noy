@@ -1,10 +1,10 @@
-/*! \file filesys.cc
+/*! \file filesys.cc 
 //  \brief Routines to manage the overall operation of the file system.
 //
 //	Implements routines to map from textual file names to files.
 //
 //	Each file in the file system has:
-//	   - A file header, stored in a sector on disk
+//	   - A file header, stored in a sector on disk 
 //		(the size of the file header data structure is arranged
 //		to be precisely the size of 1 disk sector)
 //	   - A number of data blocks
@@ -16,7 +16,7 @@
 //
 //      Both the bitmap and the directory are represented as normal
 //	files.  Their file headers are located in specific sectors
-//	(sector 0 and sector 1), so that the file system can find them
+//	(sector 0 and sector 1), so that the file system can find them 
 //	on bootup.
 //
 //	The file system assumes that the bitmap and directory files are
@@ -41,7 +41,7 @@
 //       Points 1 and 2 are removed in the file system assignment
 //
 //  Copyright (c) 1992-1993 The Regents of the University of California.
-//  All rights reserved.  See copyright.h for copyright notice and limitation
+//  All rights reserved.  See copyright.h for copyright notice and limitation 
 //  of liability and disclaimer of warranty provisions.
 */
 
@@ -57,7 +57,7 @@
 #include "filesys/oftable.h"
 
 /*! Sectors containing the file headers for the bitmap of free sectors,
-// and the directory of files.  These file headers are placed in well-known
+// and the directory of files.  These file headers are placed in well-known 
 // sectors, so that they can be located on boot-up.
 */
 #define FreeMapSector 		0
@@ -65,7 +65,7 @@
 
 //----------------------------------------------------------------------
 // decompname
-/*! this function returns the name of the first directory
+/*! this function returns the name of the first directory 
 //  in the path given in argument, as well as the remainder of the path
 //  if we call decompname("/bin/new/halt",head,tail), we get
 //     "bin" in head and "/new/halt" in tail
@@ -89,7 +89,7 @@ bool decompname (const char * orig_path, char * head, char * tail)
   // Init "head" with the first element in the path
   while (*path != '\0' && *path != '/') *head++ = *path++;
   *head = '\0';
-
+  
   // Init "tail" with the remainder
   if(*path == '\0') {
     *head = '\0';
@@ -156,7 +156,7 @@ int FindDir(char *name)
 /*! 	Initialize the file system.  If format = true, the disk has
 //	nothing on it, and we need to initialize the disk to contain
 //	an empty directory, and a bitmap of free sectors (with almost but
-//	not all of the sectors marked as free).
+//	not all of the sectors marked as free).  
 //
 //	If format = false, we just have to open the files
 //	representing the bitmap and the directory.
@@ -165,7 +165,7 @@ int FindDir(char *name)
 */
 //----------------------------------------------------------------------
 FileSystem::FileSystem(bool format)
-{
+{ 
     DEBUG('f', (char*)"Initializing the file system.\n");
     if (format) {
         BitMap freeMap(NUM_SECTORS);
@@ -176,7 +176,7 @@ FileSystem::FileSystem(bool format)
 
 	// First, allocate space for FileHeaders for the directory and bitmap
 	// (make sure no one else grabs these!)
-	freeMap.Mark(FreeMapSector);
+	freeMap.Mark(FreeMapSector);	    
 	freeMap.Mark(DirectorySector);
 
 	// Second, allocate space for the data blocks containing the contents
@@ -190,13 +190,13 @@ FileSystem::FileSystem(bool format)
 
 	// Flush the bitmap and directory FileHeaders back to disk
 	// We need to do this before we can "Open" the file, since open
-	// reads the file header off of disk (and currently the disk has
+	// reads the file header off of disk (and currently the disk has 
 	// garbage on it!).
 
         DEBUG('f', (char*)"Writing headers back to disk.\n");
-	mapHdr.WriteBack(FreeMapSector);
+	mapHdr.WriteBack(FreeMapSector);    
 	dirHdr.WriteBack(DirectorySector);
-
+	
 	// OK to open the bitmap and directory files now
 	// The file system operations assume these two files are left open
 	// while Nachos is running.
@@ -233,7 +233,7 @@ FileSystem::FileSystem(bool format)
 //----------------------------------------------------------------------
 
 FileSystem::~FileSystem()
-{
+{ 
   delete freeMapFile;
   delete directoryFile;
 }
@@ -249,14 +249,14 @@ FileSystem::~FileSystem()
 //        Allocate a sector for the file header
 // 	  Allocate space on disk for the data blocks for the file
 //	  Add the name to the directory
-//	  Store the new file header on disk
+//	  Store the new file header on disk 
 //	  Flush the changes to the bitmap and the directory back to disk
 //
 // 	Create fails if:
 //   		file is already in directory
 //	 	no free space for file header
 //	 	no free entry for file in directory
-//	 	no free space for data blocks for the file
+//	 	no free space for data blocks for the file 
 //
 // 	Note that this implementation assumes there is no concurrent access
 //	to the file system!
@@ -276,7 +276,7 @@ FileSystem::Create(char *name, int initialSize)
     g_open_file_table->createLock->Acquire();
     strcpy(dirname,name);
     DEBUG('f', (char*)"Creating file %s, size %d\n", name, initialSize);
-
+    
     dirsector=FindDir(dirname);
     if (dirsector == -1) {
       g_open_file_table->createLock->Release();
@@ -297,10 +297,10 @@ FileSystem::Create(char *name, int initialSize)
     freeMap.FetchFrom(freeMapFile);
 
     // Find a sector to hold the file header
-    sector = freeMap.Find();
+    sector = freeMap.Find();	
     if (sector == -1) {
       g_open_file_table->createLock->Release();
-      return OUT_OF_DISK;		// no free block for file header
+      return OUT_OF_DISK;		// no free block for file header 
     }
 
     // Add the file in the directory
@@ -312,7 +312,7 @@ FileSystem::Create(char *name, int initialSize)
 
     // Indicate that this is a file, not a directory
     FileHeader hdr;
-    hdr.SetFile();
+    hdr.SetFile();  
 
     // Allocate space for the data sectors
     if (!hdr.Allocate(&freeMap, initialSize)) {
@@ -332,9 +332,9 @@ FileSystem::Create(char *name, int initialSize)
 
 //----------------------------------------------------------------------
 // FileSystem::Open
-/*! 	Open a file for reading and writing.
+/*! 	Open a file for reading and writing.  
 //	To open a file:
-//	  Find the location of the file's header, using the directory
+//	  Find the location of the file's header, using the directory 
 //	  Bring the header into memory
 //
 //	\param name the text name of the file to be opened (NOT MODIFIED)
@@ -342,7 +342,7 @@ FileSystem::Create(char *name, int initialSize)
 //----------------------------------------------------------------------
 OpenFile *
 FileSystem::Open(char *name)
-{
+{ 
   OpenFile *openFile = NULL;
   int sector,dirsector;
   char dirname[g_cfg->MaxFileNameSize];
@@ -359,10 +359,10 @@ FileSystem::Open(char *name)
   directory.FetchFrom(&dirfile);
 
   // Find the file in the directory
-  sector = directory.Find(dirname);
+  sector = directory.Find(dirname); 
   if (sector >= 0)
-    {
-    openFile = new OpenFile(sector);	// name was found in directory
+    { 		
+    openFile = new OpenFile(sector);	// name was found in directory 
     openFile->SetName(name);
     if (openFile->IsDir())
       {
@@ -389,7 +389,7 @@ FileSystem::Open(char *name)
 //----------------------------------------------------------------------
 int
 FileSystem::Remove(char *name)
-{
+{ 
   int sector = -1;
   int dirsector = -1;
   char dirname[g_cfg->MaxFileNameSize];
@@ -398,7 +398,7 @@ FileSystem::Remove(char *name)
 
   // Get the sector number of the parent directory
   dirsector = FindDir(dirname);
-
+  
   // Check if the path is correct
   if (dirsector == -1) {
     return INEXIST_DIRECTORY_ERROR;
@@ -408,13 +408,13 @@ FileSystem::Remove(char *name)
   OpenFile dirfile(dirsector);
   Directory directory(g_cfg->NumDirEntries);
   directory.FetchFrom(&dirfile);
-
+  
   // Look for the file in the directory
   DEBUG('f', (char*)"looking for %s in the drectory\n",name);
   sector = directory.Find(dirname);
 
   // Look if we find the file in the directory
-  if (sector == -1) return INEXIST_FILE_ERROR; // file not found
+  if (sector == -1) return INEXIST_FILE_ERROR; // file not found 
 
   // Fetch the file header from disk
   FileHeader fileHdr;
@@ -433,13 +433,13 @@ FileSystem::Remove(char *name)
 
   // Remove the file from the directory
   directory.Remove(dirname);
-
+  
   // Flush everything to disk
   freeMap.WriteBack(freeMapFile);    	// freemap
   directory.WriteBack(&dirfile);        // directory
 
   return NO_ERROR;
-}
+} 
 
 //----------------------------------------------------------------------
 // FileSystem::List
@@ -473,7 +473,7 @@ FileSystem::List()
 void
 FileSystem::Print()
 {
-
+    
     printf("Bit map file header:\n");
     FileHeader bitHdr;
     bitHdr.FetchFrom(FreeMapSector);
@@ -491,12 +491,12 @@ FileSystem::Print()
     Directory directory(g_cfg->NumDirEntries);
     directory.FetchFrom(directoryFile);
     directory.Print();
-}
+} 
 
 //----------------------------------------------------------------------
 // FileSystem::GetFreeMapFile()
 /*!    return the free map file (used by the open file table).
-//
+//	
 */
 //----------------------------------------------------------------------
 OpenFile *FileSystem::GetFreeMapFile() {
@@ -506,7 +506,7 @@ OpenFile *FileSystem::GetFreeMapFile() {
 //----------------------------------------------------------------------
 // FileSystem::GetDirFile()
 /*!    return the base directory file (used by the open file table).
-//
+//	
 */
 //----------------------------------------------------------------------
 OpenFile *FileSystem::GetDirFile(){
@@ -520,12 +520,12 @@ OpenFile *FileSystem::GetDirFile(){
 //
 //	The steps to create a dirctory are:
 //	  Make sure the name is valid and does not exist
-//        Create a file containing the directory entries
+//        Create a file containing the directory entries  
 // mkdir fails if:
 //   		dir already exists
 //	 	no free space for file header
 //	 	no free entry for dir in directory
-//	 	no free space for data blocks for the file
+//	 	no free space for data blocks for the file 
 //
 // 	Note that this implementation assumes there is no concurrent access
 //	to the file system!
@@ -537,7 +537,7 @@ OpenFile *FileSystem::GetDirFile(){
 //----------------------------------------------------------------------
 int
 FileSystem::Mkdir(char *dirname)
-{
+{ 
   char name[g_cfg->MaxFileNameSize];
   strcpy(name, dirname);
   DEBUG('f', (char*)"Mkdir %s\n", name);
@@ -567,13 +567,13 @@ FileSystem::Mkdir(char *dirname)
 
   // Allocate free sectors for the directory contents
   FileHeader hdr;
-  if (!hdr.Allocate(&freeMap, g_cfg->DirectoryFileSize))
+  if (!hdr.Allocate(&freeMap, g_cfg->DirectoryFileSize)) 
     return OUT_OF_DISK; // no space on disk for data
 
   // Add the directory in the parent directory
   int add_result = parentdir.Add(name, hdr_sect);
   if (add_result != NO_ERROR)
-    return add_result;
+    return add_result;  
 
   /*
    * Flush everything to disk
@@ -592,14 +592,14 @@ FileSystem::Mkdir(char *dirname)
   parentdir.WriteBack(&parentdirfile);
   freeMap.WriteBack(freeMapFile);
 
-  return NO_ERROR;
+  return NO_ERROR;  
 }
 
 //----------------------------------------------------------------------
 // FileSystem::Rmdir
 /*! 	Delete a directory from the file system.  This requires:
 //	 check the name is valid
-//       check the directory  is empty
+//       check the directory  is empty   
 //          Remove it from its directory
 //	    Delete the space for its header
 //	    Delete the space for its data blocks
@@ -632,7 +632,7 @@ FileSystem::Rmdir(char *dirname)
   // Check that the directory to be removed exist
   int thedirsect = parentdir.Find(name);
   if (thedirsect < 0)
-    return INEXIST_DIRECTORY_ERROR; // directory not found
+    return INEXIST_DIRECTORY_ERROR; // directory not found 
 
   // Get its header
   FileHeader thedirheader;
@@ -645,7 +645,7 @@ FileSystem::Rmdir(char *dirname)
   // Fetch its contents from the disk
   OpenFile thedirfile(thedirsect);
   Directory thedir(g_cfg->NumDirEntries);
-  thedir.FetchFrom(& thedirfile);
+  thedir.FetchFrom(& thedirfile); 
 
   // Check that is is empty
   if (! thedir.empty())
@@ -663,10 +663,11 @@ FileSystem::Rmdir(char *dirname)
 
   // We remove the directory from its parent directory
   parentdir.Remove(name);
-
+ 
   // Flush everything to disk
   freeMap.WriteBack(freeMapFile);         // freemap
   parentdir.WriteBack(&parentdirfile);    // parent directory
 
   return NO_ERROR;
 }
+

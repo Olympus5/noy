@@ -104,11 +104,10 @@ Semaphore::V() {
 
 	DEBUG('e', "V: %d\n", value);
 
+	value++;
+
 	Thread* thread = (Thread*) queue->Remove();
-	if(thread != NULL) {
-		value++;
-		g_scheduler->ReadyToRun(thread);
-	}
+	if(thread != NULL) g_scheduler->ReadyToRun(thread);
 
 	g_machine->interrupt->SetStatus(int_status);
 }
@@ -237,10 +236,10 @@ Condition::~Condition() {
 */
 //----------------------------------------------------------------------
 void Condition::Wait() {
-	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 	waitqueue->Append(g_current_thread);
 	g_current_thread->Sleep();
-	g_machine->interrupt->SetStatus(int_status);
+	g_machine->interrupt->SetStatus(INTERRUPTS_ON);
 }
 
 //----------------------------------------------------------------------
@@ -251,10 +250,10 @@ void Condition::Wait() {
 */
 //----------------------------------------------------------------------
 void Condition::Signal() {
-	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 	Thread* thread = (Thread*) waitqueue->Remove();
 	if(thread != NULL) g_scheduler->ReadyToRun(thread);
-	g_machine->interrupt->SetStatus(int_status);
+	g_machine->interrupt->SetStatus(INTERRUPTS_ON);
 }
 
 //----------------------------------------------------------------------
@@ -264,7 +263,7 @@ void Condition::Signal() {
 */
 //----------------------------------------------------------------------
 void Condition::Broadcast() {
-	IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
 	Thread* thread = (Thread*) waitqueue->Remove();
 
 	while(thread != NULL) {
@@ -272,5 +271,5 @@ void Condition::Broadcast() {
 		thread = (Thread*) waitqueue->Remove();
 	}
 
-	g_machine->interrupt->SetStatus(int_status);
+	g_machine->interrupt->SetStatus(INTERRUPTS_ON);
 }
