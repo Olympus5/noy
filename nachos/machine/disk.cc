@@ -1,5 +1,5 @@
-/*! \file disk.cc 
-//  \brief Routines to simulate a physical disk device; 
+/*! \file disk.cc
+//  \brief Routines to simulate a physical disk device;
 //
 //      Reading and writing
 //	to the disk is simulated as reading and writing to a UNIX file.
@@ -12,7 +12,7 @@
 //  DO NOT CHANGE -- part of the machine emulation
 //
 // Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
+// All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
 
 #include "machine/machine.h"
@@ -28,9 +28,9 @@ static void DiskDone(int64_t arg) {((Disk *)arg)->HandleInterrupt(); }
 
 //----------------------------------------------------------------------
 // Disk::Disk()
-/*! 	Constructor. Initialize a simulated disk.  
+/*! 	Constructor. Initialize a simulated disk.
 //      Open the UNIX file (creating it
-//	if it doesn't exist), and check the magic number to make sure it's 
+//	if it doesn't exist), and check the magic number to make sure it's
 // 	OK to treat it as Nachos disk storage.
 //
 //	\param name text name of the file simulating the Nachos disk
@@ -52,17 +52,17 @@ Disk::Disk(char* name, VoidNoArgFunctionPtr callWhenDone)
 
     // Open the UNIX file used to simulate the disk
     fileno = OpenForReadWrite(name, false);
-    if (fileno >= 0) {		 	// file exists, check magic number 
+    if (fileno >= 0) {		 	// file exists, check magic number
 	Read(fileno, (char *) &magicNum, g_cfg->MagicSize);
 	ASSERT(magicNum == g_cfg->MagicNumber);
     } else {				// file doesn't exist, create it
         fileno = OpenForWrite(name);
-	magicNum = g_cfg->MagicNumber;  
+	magicNum = g_cfg->MagicNumber;
 	WriteFile(fileno, (char *) &magicNum, g_cfg->MagicSize); // write magic number
 
 	// need to write at end of file, so that reads will not return EOF
-        Lseek(fileno, g_cfg->DiskSize - sizeof(int), 0);	
-	WriteFile(fileno, (char *)&tmp, sizeof(int));  
+        Lseek(fileno, g_cfg->DiskSize - sizeof(int), 0);
+	WriteFile(fileno, (char *)&tmp, sizeof(int));
     }
     DEBUG('h', (char *)"[ctor] Clear active\n");
     active = false;
@@ -70,7 +70,7 @@ Disk::Disk(char* name, VoidNoArgFunctionPtr callWhenDone)
 
 //----------------------------------------------------------------------
 // Disk::~Disk()
-/*! 	Destructor. Clean up disk simulation, by closing the UNIX file 
+/*! 	Destructor. Clean up disk simulation, by closing the UNIX file
 //      representing the disk.
 */
 //----------------------------------------------------------------------
@@ -94,12 +94,12 @@ PrintSector (bool writing, int sector, char *data)
     int *p = (int *) data;
 
     if (writing)
-        printf("Writing sector: %d\n", sector); 
+        printf("Writing sector: %d\n", sector);
     else
-        printf("Reading sector: %d\n", sector); 
+        printf("Reading sector: %d\n", sector);
     for (unsigned int i = 0; i < (g_cfg->SectorSize/sizeof(int)); i++)
 	printf("%x ", p[i]);
-    printf("\n"); 
+    printf("\n");
 }
 
 //----------------------------------------------------------------------
@@ -123,7 +123,7 @@ Disk::ReadRequest(int sectorNumber, char* data)
     int ticks = ComputeLatency(sectorNumber, false);
 
     // Only one request at a time
-    ASSERT(!active);		
+    ASSERT(!active);
 
     // Sanity check of the sector number
     ASSERT((sectorNumber >= 0) && (sectorNumber < NUM_SECTORS))
@@ -135,11 +135,11 @@ Disk::ReadRequest(int sectorNumber, char* data)
     Read(fileno, data, g_cfg->SectorSize);
     if (DebugIsEnabled('h'))
 	PrintSector(false, sectorNumber, data);
-    
+
     DEBUG('h', (char *)"[rdrq] Set active\n");
     active = true;
     UpdateLast(sectorNumber);
-    
+
     // Update the statistics
     g_current_thread->GetProcessOwner()->stat->incrNumDiskReads();
 
@@ -173,7 +173,7 @@ Disk::WriteRequest(int sectorNumber, char* data)
 
     // Sanity check of the sector number
     ASSERT((sectorNumber >= 0) && (sectorNumber < NUM_SECTORS));
-    
+
     DEBUG('h', (char *)"Writing to sector %d\n", sectorNumber);
 
     // Write in the UNIX file
@@ -181,7 +181,7 @@ Disk::WriteRequest(int sectorNumber, char* data)
     WriteFile(fileno, data, g_cfg->SectorSize);
     if (DebugIsEnabled('h'))
 	PrintSector(true, sectorNumber, data);
-    
+
     DEBUG('h', (char *)"[wrrq] Set active\n");
     active = true;
     UpdateLast(sectorNumber);
@@ -202,7 +202,7 @@ Disk::WriteRequest(int sectorNumber, char* data)
 
 void
 Disk::HandleInterrupt ()
-{ 
+{
     DEBUG('h', (char *)"[isr] Clear active\n");
     active = false;
 
@@ -216,23 +216,23 @@ Disk::HandleInterrupt ()
 //	track on the disk.  Since when we finish seeking, we are likely
 //	to be in the middle of a sector that is rotating past the head,
 //	we also return how long until the head is at the next sector boundary.
-//	
+//
 //   	Disk seeks at one track per SEEK_TIME nanos (cf. stats.h)
 //   	and rotates at one sector per ROTATION_TIME nanos
 */
 //----------------------------------------------------------------------
 
 int
-Disk::TimeToSeek(int newSector, int *rotation) 
+Disk::TimeToSeek(int newSector, int *rotation)
 {
 
     int newTrack = newSector / SECTORS_PER_TRACK;
     int oldTrack = lastSector / SECTORS_PER_TRACK;
-    int seek = abs(newTrack - oldTrack) * 
+    int seek = abs(newTrack - oldTrack) *
       nano_to_cycles(SEEK_TIME,g_cfg->ProcessorFrequency);
 				// how long will seek take?
-    int over = (g_stats->getTotalTicks() + seek) % 
-      (nano_to_cycles(ROTATION_TIME,g_cfg->ProcessorFrequency)); 
+    int over = (g_stats->getTotalTicks() + seek) %
+      (nano_to_cycles(ROTATION_TIME,g_cfg->ProcessorFrequency));
 				// will we be in the middle of a sector when
 				// we finish the seek?
 
@@ -249,7 +249,7 @@ Disk::TimeToSeek(int newSector, int *rotation)
 */
 //----------------------------------------------------------------------
 
-int 
+int
 Disk::ModuloDiff(int to, Time from)
 {
     int toOffset = to % SECTORS_PER_TRACK;
@@ -267,15 +267,15 @@ Disk::ModuloDiff(int to, Time from)
 //   	Disk seeks at one track per SEEK_TIME nanos (cf. stats.h)
 //   	and rotates at one sector per ROTATION_TIME nanos
 //
-//   	To find the rotational latency, we first must figure out where the 
+//   	To find the rotational latency, we first must figure out where the
 //   	disk head will be after the seek (if any).  We then figure out
-//   	how long it will take to rotate completely past newSector after 
+//   	how long it will take to rotate completely past newSector after
 //	that point.
 //
 //   	The disk also has a "track buffer"; the disk continuously reads
-//   	the contents of the current disk track into the buffer.  This allows 
+//   	the contents of the current disk track into the buffer.  This allows
 //   	read requests to the current track to be satisfied more quickly.
-//   	The contents of the track buffer are discarded after every seek to 
+//   	The contents of the track buffer are discarded after every seek to
 //   	a new track.
 */
 //----------------------------------------------------------------------
@@ -290,8 +290,8 @@ Disk::ComputeLatency(int newSector, bool writing)
 
 #ifndef NOTRACKBUF	// turn this on if you don't want the track buffer stuff
     // check if track buffer applies
-    if ((writing == false) && (seek == 0) 
-		&& ( (Time)((timeAfter - bufferInit) / rot_time) 
+    if ((writing == false) && (seek == 0)
+		&& ( (Time)((timeAfter - bufferInit) / rot_time)
 	     		> (Time)ModuloDiff(newSector, bufferInit / rot_time))) {
         DEBUG('h', (char *)"Request latency = %d\n",rot_time);
 	return rot_time; // time to transfer sector from the track buffer
@@ -316,7 +316,7 @@ Disk::UpdateLast(int newSector)
 {
     int rotate;
     int seek = TimeToSeek(newSector, &rotate);
-    
+
     if (seek != 0)
 	bufferInit = g_stats->getTotalTicks() + seek + rotate;
     lastSector = newSector;

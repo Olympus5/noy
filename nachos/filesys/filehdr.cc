@@ -1,17 +1,17 @@
-/*! \file filehdr.cc 
-//  \brief Routines for managing the disk file header 
+/*! \file filehdr.cc
+//  \brief Routines for managing the disk file header
 //
 //	(in UNIX, this would be called the i-node).
-//      The file header is used to locate where on disk the 
+//      The file header is used to locate where on disk the
 //	file's data is stored.  We implement this as a fixed size
-//	table of pointers -- each entry in the table points to the 
+//	table of pointers -- each entry in the table points to the
 //	disk sector containing that portion of the file data
-//	(in other words, there are no indirect or doubly indirect 
+//	(in other words, there are no indirect or doubly indirect
 //	blocks). The table size is chosen so that the file header
-//	will be just big enough to fit in one disk sector, 
+//	will be just big enough to fit in one disk sector,
 //
-//      Unlike in a real system, we do not keep track of file permissions, 
-//	ownership, last modification date, etc., in the file header. 
+//      Unlike in a real system, we do not keep track of file permissions,
+//	ownership, last modification date, etc., in the file header.
 //
 //	A file header can be initialized in two ways:
 //	   for a new file, by modifying the in-memory data structure
@@ -20,7 +20,7 @@
 //
 //
 //  Copyright (c) 1992-1993 The Regents of the University of California.
-//  All rights reserved.  See copyright.h for copyright notice and limitation 
+//  All rights reserved.  See copyright.h for copyright notice and limitation
 //  of liability and disclaimer of warranty provisions.
 */
 
@@ -45,7 +45,7 @@ FileHeader::~FileHeader(void)
 // FileHeader::Allocate
 /*! 	Initialize a file header, including allocating space
 //      on disk for the file data.
-//	Allocate data and header blocks for the file out of the 
+//	Allocate data and header blocks for the file out of the
 //      map of free disk blocks.
 //
 //	\param freeMap is the bitmap of free disk sectors
@@ -56,7 +56,7 @@ FileHeader::~FileHeader(void)
 //----------------------------------------------------------------------
 bool
 FileHeader::Allocate(BitMap *freeMap, int fileSize)
-{ 
+{
   int i;
   numBytes = fileSize;
 
@@ -67,7 +67,7 @@ FileHeader::Allocate(BitMap *freeMap, int fileSize)
 
   // Compute how many header sectors are required
   numHeaderSectors = divRoundUp((numSectors-DatasInFirstSector),DatasInSector);
-  
+
   // Check if there is enough free sectors for both of them
   if (freeMap->NumClear() < numSectors + numHeaderSectors)
     return false;		// not enough space
@@ -97,7 +97,7 @@ FileHeader::Allocate(BitMap *freeMap, int fileSize)
 //----------------------------------------------------------------------
 bool
 FileHeader::reAllocate(BitMap *freeMap, int oldFileSize,int newFileSize)
-{ 
+{
   int i;
 
   // How many new data sectors are required
@@ -121,7 +121,7 @@ FileHeader::reAllocate(BitMap *freeMap, int oldFileSize,int newFileSize)
     dataSectors[i + numSectors] = freeMap->Find();
 
   numSectors += newnumSectors;
-  numHeaderSectors+= newnumHeaderSectors;    
+  numHeaderSectors+= newnumHeaderSectors;
 
   return true;
 }
@@ -133,7 +133,7 @@ FileHeader::reAllocate(BitMap *freeMap, int oldFileSize,int newFileSize)
 */
 //----------------------------------------------------------------------
 
-void 
+void
 FileHeader::Deallocate(BitMap *freeMap)
 {
     int i;
@@ -148,12 +148,12 @@ FileHeader::Deallocate(BitMap *freeMap)
 	ASSERT(freeMap->Test((int) headerSectors[i]));  // ought to be marked!
 	freeMap->Clear((int) headerSectors[i]);
     }
-    
+
 }
 
 //----------------------------------------------------------------------
 // FileHeader::FetchFrom
-/*! 	Fetch contents of file header from disk. 
+/*! 	Fetch contents of file header from disk.
 //
 //	\param sector is the disk sector containing the file header
 */
@@ -170,7 +170,7 @@ FileHeader::FetchFrom(int sector)
 
   // Read the header from the disk
   // and put it in the temporary buffer
-  g_disk_driver->ReadSector(sector, (char *)SectorImg);  
+  g_disk_driver->ReadSector(sector, (char *)SectorImg);
 
   // Allocates memory for the table of data sectors
   dataSectors = new int[MAX_DATA_SECTORS];
@@ -211,7 +211,7 @@ FileHeader::FetchFrom(int sector)
 
 //----------------------------------------------------------------------
 // FileHeader::WriteBack
-/*! 	Write the modified contents of the file header back to disk. 
+/*! 	Write the modified contents of the file header back to disk.
 //
 //	\param sector is the disk sector to contain the file header
 */
@@ -246,7 +246,7 @@ FileHeader::WriteBack(int sector)
     {
       memset(SectorImg, 0, g_cfg->SectorSize);
       for(j=0 ; j<DatasInSector ; j++)
-	SectorImg[j] = dataSectors[j + DatasInFirstSector + i*DatasInSector];
+	     SectorImg[j] = dataSectors[j + DatasInFirstSector + i*DatasInSector];
       if (i+1 < numHeaderSectors)
 	NextHeaderSector(SectorImg) = headerSectors[i+1];
       else
@@ -277,7 +277,7 @@ FileHeader::ByteToSector(int offset)
 /*!  	\return the number of bytes in the file.
  */
 //----------------------------------------------------------------------
-int 
+int
 FileHeader::FileLength()
 {
     return numBytes;
@@ -293,14 +293,14 @@ FileHeader::ChangeFileLength(int newsize)
 {
   numBytes = newsize;
   ASSERT(newsize <= MAX_FILE_LENGTH);
-  
+
 }
 //----------------------------------------------------------------------
 // FileHeader::MaxFileLength
 /*!  	\return the maximum number of bytes we can put in the file without reallocating.
  */
 //----------------------------------------------------------------------
-int 
+int
 FileHeader::MaxFileLength()
 {
     return numSectors * g_cfg->SectorSize;
@@ -330,7 +330,7 @@ FileHeader::Print()
             else
 		printf("\\%x", (unsigned char)data[j]);
 	}
-        printf("\n"); 
+        printf("\n");
     }
 }
 
@@ -341,7 +341,7 @@ FileHeader::Print()
 //      \return true if this file is a directory
 */
 //----------------------------------------------------------------------
-bool 
+bool
 FileHeader::IsDir()
 {
   return (isdir==1);
@@ -350,10 +350,10 @@ FileHeader::IsDir()
 //----------------------------------------------------------------------
 // FileHeader::SetFile
 /*! 	Mark this file as a file and not a directory.
-//	
+//
 */
 //----------------------------------------------------------------------
-void 
+void
 FileHeader::SetFile()
 {
   isdir=0;
@@ -362,11 +362,11 @@ FileHeader::SetFile()
 //----------------------------------------------------------------------
 // FileHeader::SetDir
 /*!    Mark this file as a directory.
-//	
+//
 */
 //----------------------------------------------------------------------
 void
-FileHeader::SetDir()   
+FileHeader::SetDir()
 {
   isdir=1;
 }

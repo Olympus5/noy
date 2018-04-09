@@ -1,8 +1,8 @@
-/*! \file system.cc
+/*! \file system.cc 
 //  \brief Nachos initialization and cleanup routines.
 */
 // Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation
+// All rights reserved.  See copyright.h for copyright notice and limitation 
 // of liability and disclaimer of warranty provisions.
 
 #include "kernel/system.h"
@@ -79,8 +79,8 @@ CleanupOK()
 //	Note that instead of calling Yield() directly (which would
 //	suspend the interrupt handler, not the interrupted thread
 //	which is what we wanted to context switch), we set a flag
-//	so that once the interrupt handler is done, it will appear as
-//	if the interrupted thread called Yield at the point it is
+//	so that once the interrupt handler is done, it will appear as 
+//	if the interrupted thread called Yield at the point it is 
 //	was interrupted.
 //
 //	\param dummy is because every interrupt handler takes one argument,
@@ -99,10 +99,10 @@ TimerInterruptHandler(int dummy)
 //----------------------------------------------------------------------
 // Initialize
 /*! 	Initialize Nachos global data structures.  Interpret command
-//	line arguments in order to determine flags for the initialization.
-//
+//	line arguments in order to determine flags for the initialization.  
+// 
 //	\param argc is the number of command line arguments (including the name
-//		of the command) -- ex: "nachos -d +" -> argc = 3
+//		of the command) -- ex: "nachos -d +" -> argc = 3 
 //	\param argv is an array of strings, one for each command line argument
 //		ex: "nachos -d +" -> argv = {"nachos", "-d", "+"}
 */
@@ -129,7 +129,7 @@ Initialize(int argc, char **argv)
 	argCount = 2;
       }
     }
-
+    
     if (!strcmp(*argv, (char*)"-s"))
       debugUserProg = true;
     if (!strcmp(*argv, (char*)"-f")) {
@@ -138,7 +138,7 @@ Initialize(int argc, char **argv)
   }
 
   // Scan configuration file to set up Nachos parameters
-  g_cfg = new Config(filename);
+  g_cfg = new Config(filename); 
 
   // Set up debug level
   DebugInit(debugArgs);			// initialize DEBUG messages
@@ -159,7 +159,7 @@ Initialize(int argc, char **argv)
   g_page_fault_manager = new PageFaultManager();
   g_swap_manager = new SwapManager();
   g_swap_disk_driver = g_swap_manager->GetSwapDisk();
-  g_physical_mem_manager = new PhysicalMemManager();
+  g_physical_mem_manager = new PhysicalMemManager();  
   g_syscall_error = new SyscallError();
 
   // Init the Nachos internal data structures
@@ -173,22 +173,22 @@ Initialize(int argc, char **argv)
 
   // We didn't explicitly allocate the current thread we are running in.
   // But if it ever tries to give up the CPU, we better have a Thread
-  // object to save its state.
+  // object to save its state. 
   // It's just a temporary thread
-
+  
   // Create the process (address space + statistics) context for this temporary thread
   Process *rootProcess = new Process(NULL,&errStatus);
   if (errStatus != NO_ERROR) Exit(-1);
-
-  // Create the root thread
+  
+  // Create the root thread 
   g_current_thread = new Thread((char*)"main-temp");
   errStatus = g_current_thread->Start(rootProcess, 0x0, -1);
   if (errStatus != NO_ERROR) exit(-1);
-
+  
   // Remove g_current_thread from ready list (inserted by default)
   // because it is currently executing
   ASSERT(g_current_thread == g_scheduler->FindNextToRun());
-
+  
   // Enable interrupts
   g_machine->interrupt->SetStatus(INTERRUPTS_ON);
 
@@ -218,7 +218,7 @@ Cleanup()
   }
 
   // Clean all global objects
-  printf("\nCleaning up...\n");
+  printf("\nCleaning up...\n");    
   if (g_cfg->PrintStat) {
     g_stats->Print();
   }

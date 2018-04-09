@@ -23,6 +23,7 @@
 #include "kernel/synch.h"
 #include "machine/ACIA.h"
 #include "drivers/drvACIA.h"
+#include <string.h>
 
 //-------------------------------------------------------------------------
 // DriverACIA::DriverACIA()
@@ -37,9 +38,17 @@
 
 DriverACIA::DriverACIA()
 {
-  g_machine->acia->SetWorkingMode(BUSY_WAITING);
-  this->send_sema = new Semaphore((char*)"send_sema", 0);
-  this->receive_sema = new Semaphore((char*)"receive_sema", 0);
+		/*
+		 * Si le driver est configuré en Busy Waiting alors on initialise le mode de fonctionnement à la construction.
+		 * Pour les interruptions cela sera fait, respectivement, pour SEND_INTERRUPT dans la fonction d'envoie et pour REC_INTERRUPT dans la fonction de lecture
+		 * Cependant on initialise les variables membres propre au fonctionnement par interruptions
+		 */
+		if(g_cfg->ACIA == ACIA_BUSY_WAITING) {
+			g_machine->acia->SetWorkingMode(BUSY_WAITING);
+		} else {
+			this->send_sema = new Semaphore((char*)"send_sema", 1);
+			this->receive_sema = new Semaphore((char*)"receive_sema", 0);
+		}
 }
 
 //-------------------------------------------------------------------------
@@ -50,10 +59,41 @@ DriverACIA::DriverACIA()
 
 int DriverACIA::TtySend(char* buff)
 {
-  for(int i = 0; i < strlen(buff); i++) {
-    while(g_machine->acia->GetOutputStateReg() == FULL) {}
-    
-  }
+
+	if(g_cfg->ACIA == ACIA_BUSY_WAITING) {// Busy waiting mode
+		unsigned int i = 0;
+
+	  for(i = 0; i < strlen(buff); i++) {
+	      // Attente active
+	      while(g_machine->acia->GetOutputStateReg() == FULL) {};
+				// On envoie le caractère sur le bus
+	      g_machine->acia->PutChar(buff[i]);
+	      DEBUG('d', "-Valeur de l'ACIA (it %d) = %c\n", i, buff[i]);
+	  }
+
+		// On oublie pas de placer le caractère de fin de chaine '\0' (pour que le receiver puisse savoir quand l'envoie est fini)
+	  while(g_machine->acia->GetOutputStateReg() == FULL) {};
+	  g_machine->acia->PutChar('\0');
+	} else { // Interrupt mode
+		this->send_sema->P();
+		this->ind_send = 1;
+		int i;
+
+		// On remplie le tampon d'émission, pour que la routine d'it puisse accéder aux caractères à envoyer
+		for(i = 0; i < BUFFER_SIZE-1 && buff[i] != 0; i++) {
+			this->send_buffer[i] = buff[i];
+		}
+
+		this->send_buffer[i] = '\0';
+
+		g_machine->acia->SetWorkingMode(SEND_INTERRUPT);
+		// On envoie le premier caractère pour lancer la routine d'IT
+		g_machine->acia->PutChar(buff[0]);
+
+		DEBUG('d', "state of output ACIA: %d and allowed mode: %d\n", g_machine->acia->GetOutputStateReg() == EMPTY, g_machine->acia->GetWorkingMode());
+	}
+
+  return strlen(buff);
 }
 
 //-------------------------------------------------------------------------
@@ -65,9 +105,37 @@ int DriverACIA::TtySend(char* buff)
 
 int DriverACIA::TtyReceive(char* buff,int lg)
 {
-   printf("**** Warning: method Tty_Receive of the ACIA driver not implemented yet\n");
-  exit(-1);
-  return 0;
+	int length = 0;
+
+	if(g_cfg->ACIA == ACIA_BUSY_WAITING) { // Busy waiting mode
+		int i = 0;
+	  bool end = false;
+
+	  for(i = 0; i < lg && !end; i++) {
+			//Attente active
+	    while(g_machine->acia->GetInputStateReg() == EMPTY) {};
+			// On reçois le caractère sur le bus
+	    buff[i] = g_machine->acia->GetChar();
+	    DEBUG('d', "-Valeur du buff[%d] = %c\n", i, buff[i]);
+
+	    if(buff[i] == 0) {// Une fois qu'on tombe sur le caractère de fin on stop la boucle de lecture du registre de donnée du périphérique
+	        end = true;
+	    } else {
+			length++;
+		}
+	  }
+	} else { // Interrupt mode
+		this->ind_rec = 0;
+		g_machine->acia->SetWorkingMode(REC_INTERRUPT);
+		this->receive_sema->P();
+
+		for(int i = 0; i < BUFFER_SIZE && this->receive_buffer[i] != 0; i++) {
+			buff[i] = this->receive_buffer[i];
+			length++;
+		}
+	}
+
+  return length;
 }
 
 
@@ -81,8 +149,21 @@ int DriverACIA::TtyReceive(char* buff,int lg)
 
 void DriverACIA::InterruptSend()
 {
-  printf("**** Warning: send interrupt handler not implemented yet\n");
-  exit(-1);
+	//IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+
+	if(this->send_buffer[this->ind_send] != 0) {
+		//Car debug d affiche trop de message !!!
+		//printf("Char: %c\n", this->send_buffer[this->ind_send]);
+		g_machine->acia->PutChar(this->send_buffer[this->ind_send]);
+		this->ind_send++;
+	} else {
+		g_machine->acia->PutChar('\0');
+		// NE PAS OUBLIER DE COUPER SEND INTERRUPT (sinon vide le buffer en entrée !!!)
+		g_machine->acia->SetWorkingMode(~SEND_INTERRUPT);
+		this->send_sema->V();
+	}
+
+	//g_machine->interrupt->SetStatus(int_status);
 }
 
 //-------------------------------------------------------------------------
@@ -97,6 +178,19 @@ void DriverACIA::InterruptSend()
 
 void DriverACIA::InterruptReceive()
 {
-  printf("**** Warning: receive interrupt handler not implemented yet\n");
-  exit(-1);
+	//IntStatus int_status = g_machine->interrupt->SetStatus(INTERRUPTS_OFF);
+	DEBUG('d', "Interrupt receive\n");
+
+	// Reception des caractères
+	this->receive_buffer[this->ind_rec] = g_machine->acia->GetChar();
+	//printf("J'ai reçu: %c\n", this->receive_buffer[this->ind_rec]);
+	//printf("Working Mode: %d\n", g_machine->acia->GetWorkingMode());
+	if(this->receive_buffer[this->ind_rec] != 0) {
+		this->ind_rec++;
+	} else {
+		g_machine->acia->SetWorkingMode(~REC_INTERRUPT);
+		this->receive_sema->V();
+	}
+
+	//g_machine->interrupt->SetStatus(int_status);
 }

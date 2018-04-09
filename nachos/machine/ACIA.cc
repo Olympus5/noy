@@ -2,7 +2,7 @@
 /*! \file ACIA.cc
 // \brief Routines implementing an ACIA device
 
-// Provide reading methodes on ACIA's state registers and on 
+// Provide reading methodes on ACIA's state registers and on
 // input/output data register. Two methods provide the reception/emision
 // of a character from/to a remote machine. Methods are also provided to
 // set/get the ACIA working mode (Busy Waiting or Interrupt).
@@ -10,11 +10,11 @@
 //  DO NOT CHANGE -- part of the machine emulation
 //
 //  Copyright (c) 1999-2000 INSA de Rennes.
-//  All rights reserved.  
-//  See copyright_insa.h for copyright notice and limitation 
+//  All rights reserved.
+//  See copyright_insa.h for copyright notice and limitation
 //  of liability and disclaimer of warranty provisions.
 */
-//------------------------------------------------------------------------- 
+//-------------------------------------------------------------------------
 
 #include "kernel/system.h"
 #include "utility/stats.h"
@@ -36,7 +36,7 @@ ACIA::ACIA(Machine *m)
   inputRegister = 0;
   outputRegister = 0;
 
-  // Initialize state registers to empty. 
+  // Initialize state registers to empty.
   inputStateRegister = EMPTY;
   outputStateRegister = EMPTY;
 
@@ -65,7 +65,7 @@ ACIA::~ACIA()
     \param mod: the new mode (a bitwise OR between flags REC_INTERRUPT, INTERRUPT and BUSY_WAITING).
 */
 //-------------------------------------------------------------------------
-void 
+void
 ACIA::SetWorkingMode(int mod)
 {
   mode = mod;
@@ -77,7 +77,7 @@ ACIA::SetWorkingMode(int mod)
     REC_INTERRUPT, EM_INTERRUPT).
 */
 //-------------------------------------------------------------------------
-int 
+int
 ACIA::GetWorkingMode(void)
 {
   return mode;
@@ -99,7 +99,7 @@ ACIA::GetInputStateReg()
 
 //-------------------------------------------------------------------------
 /** Get the state of the output register (used in the BUSY_WAITING
-    mode). 
+    mode).
     \return status of output register (EMPTY/FULL)
 */
 //-------------------------------------------------------------------------
@@ -114,7 +114,7 @@ ACIA::GetOutputStateReg()
 //-------------------------------------------------------------------------
  /** Get the input data register value. This method does not include
    * any synchronization. When calling this method one must be sure
-   * that there is a character available 
+   * that there is a character available
    \return Byte received
   */
 //-------------------------------------------------------------------------
@@ -122,6 +122,7 @@ char ACIA::GetChar()
 {
   char temp;
   temp = inputRegister;
+  //printf("input: %c\n", inputRegister);
   sysdep->Drain();
   return temp;
 };
@@ -132,16 +133,15 @@ char ACIA::GetChar()
 // ACIA::PutChar
 /** Write a character into the ACIA output register. This method does
  * not include any synchronization. When calling this method one must
- * be sure that the ACIA is ready to send a character.  
+ * be sure that the ACIA is ready to send a character.
  \param c: The character to be sent.
 */
 //-------------------------------------------------------------------------
-void 
+void
 ACIA::PutChar(char c)
 {
   // Fill the output register.
-  outputRegister = c; 
+  outputRegister = c;
   // Cause the char forwading.
   sysdep->SendChar();
 };
-
