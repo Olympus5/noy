@@ -48,24 +48,24 @@ ExceptionType PageFaultManager::PageFault(uint32_t virtualPage)
 
   //printf("VPN: %d, read: %d, write: %d\n", virtualPage, tt->getBitReadAllowed(virtualPage), tt->getBitWriteAllowed(virtualPage));
 
-  // Etape 1 ---------------------------------------------------------------------------
-  int page_number = g_physical_mem_manager->AddPhysicalToVirtualMapping(as, virtualPage);
-
-  if(g_cfg->NumPhysPages <= page_number) {
-    return BUSERROR_EXCEPTION;
+  while(tt->getBitIo(virtualPage)) {
+    g_current_thread->Yield();
   }
+  printf("%d", tt->getBitIo(virtualPage));
+  tt->setBitIo(virtualPage);
 
   if(tt->getBitSwap(virtualPage) == 1) {
     //TPV dans swap
     DEBUG('v', "Value of swap bit: %d\n", tt->getBitSwap(virtualPage));
     // Etape 2 ---------------------------------------------------------------------------
-    if(tt->getAddrDisk(virtualPage) == -1) {
-      // attendre car il y a déjà un voleur de page.
+    while(tt->getAddrDisk(virtualPage) == -1) {
+      // attendre car il y a déjà un voleur de page qui met notre page dans le swap.
       g_current_thread->Yield();
-      // Surement un P
     }
 
     g_swap_manager->GetPageSwap(tt->getAddrDisk(virtualPage), page);
+    g_swap_manager->ReleasePageSwap(tt->getAddrDisk(virtualPage));
+    tt->clearBitSwap(virtualPage);
   } else {
     DEBUG('v', "Value of swap bit: %d\n", tt->getBitSwap(virtualPage));
     if(tt->getAddrDisk(virtualPage) == -1) {
@@ -82,15 +82,23 @@ ExceptionType PageFaultManager::PageFault(uint32_t virtualPage)
     }
   }
 
+  // Etape 1 ---------------------------------------------------------------------------
+  int page_number = g_physical_mem_manager->AddPhysicalToVirtualMapping(as, virtualPage);
+
+  if(g_cfg->NumPhysPages <= page_number) {
+    return BUSERROR_EXCEPTION;
+  }
+
   // Etape 3 ---------------------------------------------------------------------------
   tt->setPhysicalPage(virtualPage, page_number);
   tt->setBitValid(virtualPage);
   memcpy(&(g_machine->mainMemory[tt->getPhysicalPage(virtualPage)*g_cfg->PageSize]), page, g_cfg->PageSize);
 
-
   //printf("VPN: %d\n", virtualPage);
 
   DEBUG('v', "Value of valid bit: %d\n", tt->getBitValid(virtualPage));
+  g_physical_mem_manager->UnlockPage(page_number);
+  tt->clearBitIo(virtualPage);
 
   return (NO_EXCEPTION);
 }
