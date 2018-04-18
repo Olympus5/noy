@@ -709,7 +709,7 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
 							} else {
 								sprintf(msg, "%d", tid);
 								g_syscall_error->SetMsg(msg,INVALID_SEMAPHORE_ID);
-								g_machine->WriteIntRegister(2,0);
+								g_machine->WriteIntRegister(2,ERROR);
 							}
 
 							DEBUG('e', (char*)"Fin Semaphore");
@@ -753,7 +753,7 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
 							} else {
 								sprintf(msg, "%d", tid);
 								g_syscall_error->SetMsg(msg, INVALID_LOCK_ID);
-								g_machine->WriteIntRegister(2,0);
+								g_machine->WriteIntRegister(2,ERROR);
 							}
 
 							DEBUG('e', (char*)"Fin Lock");
@@ -775,7 +775,7 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
 							} else {
 								sprintf(msg, "%d", tid);
 								g_syscall_error->SetMsg(msg, INVALID_LOCK_ID);
-								g_machine->WriteIntRegister(2,0);
+								g_machine->WriteIntRegister(2,ERROR);
 							}
 
 							DEBUG('e',(char*)"Fin Acquire");
@@ -796,7 +796,7 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
 							} else {
 								sprintf(msg, "%d", tid);
 								g_syscall_error->SetMsg(msg, INVALID_LOCK_ID);
-								g_machine->WriteIntRegister(2,0);
+								g_machine->WriteIntRegister(2,ERROR);
 							}
 							DEBUG('e',(char*)"Fin Release");
 							break;
@@ -839,7 +839,7 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
 							} else {
 								sprintf(msg, "%d", tid);
 								g_syscall_error->SetMsg(msg, INVALID_CONDITION_ID);
-								g_machine->WriteIntRegister(2,0);
+								g_machine->WriteIntRegister(2,ERROR);
 							}
 
 							DEBUG('e', (char*)"Fin Cond");
@@ -861,7 +861,7 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
 							} else {
 								sprintf(msg, "%d", tid);
 								g_syscall_error->SetMsg(msg, INVALID_CONDITION_ID);
-								g_machine->WriteIntRegister(2,0);
+								g_machine->WriteIntRegister(2,ERROR);
 							}
 
 							DEBUG('e',(char*)"Fin Signal");
@@ -884,7 +884,7 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
 							} else {
 								sprintf(msg, "%d", tid);
 								g_syscall_error->SetMsg(msg, INVALID_CONDITION_ID);
-								g_machine->WriteIntRegister(2,0);
+								g_machine->WriteIntRegister(2,ERROR);
 							}
 
 							DEBUG('e',(char*)"Fin Wait");
@@ -907,10 +907,43 @@ void ExceptionHandler(ExceptionType exceptiontype, int vaddr)
 							} else {
 								sprintf(msg, "%d", tid);
 								g_syscall_error->SetMsg(msg, INVALID_CONDITION_ID);
-								g_machine->WriteIntRegister(2,0);
+								g_machine->WriteIntRegister(2,ERROR);
 							}
 
 							DEBUG('e',(char*)"Fin Broadcast");
+							break;
+						}
+
+						case SC_MMAP: {
+							DEBUG('e', (char*)"FileSystem: Mmap call\n");
+							int32_t f;
+							int size;
+							int32_t fid;
+							int page_number;
+
+							fid = f = g_machine->ReadIntRegister(4);
+							size = g_machine->ReadIntRegister(5);
+
+							OpenFile *file = (OpenFile *)g_object_ids->SearchObject(fid);
+
+							if(file && file->type == FILE_TYPE) {
+								page_number = g_current_thread->GetProcessOwner()->addrspace->Mmap(file, size);
+
+								if(page_number > -1) {
+									g_syscall_error->SetMsg((char*)"", NO_ERROR);
+									g_machine->WriteIntRegister(2, page_number);
+								} else {
+									sprintf(msg, "%d", f);
+									g_syscall_error->SetMsg(msg, ERROR);
+									g_machine->WriteIntRegister(2,ERROR);
+								}
+							} else {
+								sprintf(msg, "%d", f);
+								g_syscall_error->SetMsg(msg, OPENFILE_ERROR);
+								g_machine->WriteIntRegister(2,ERROR);
+							}
+
+							DEBUG('e', (char*)"Fin Mmap\n");
 							break;
 						}
 

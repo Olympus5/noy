@@ -357,8 +357,16 @@ int AddrSpace::Alloc(int numPages)
 // ----------------------------------------------------------------------
 int AddrSpace::Mmap(OpenFile *f, int size)
 {
-  printf("**** Warning: method AddrSpace::Mmap is not implemented yet\n");
-  exit(-1);
+  int addr = Alloc((size % g_cfg->PageSize) + 1);
+
+  // Plus de place disponible donc erreur => -1
+  if(addr == -1) {
+    return -1;
+  }
+
+  
+
+  return addr;
 }
 
 //----------------------------------------------------------------------
